@@ -1,0 +1,12 @@
+{
+    "name": "azuriom/centralcorp",
+    "type": "azuriom-plugin",
+    "description": "Plugin for Azuriom",
+    "autoload": {
+        "psr-4": {
+            "Azuriom\\Plugin\\Centralcorp\\": "src/"
+        }
+    },
+    "replace": {
+    }
+}

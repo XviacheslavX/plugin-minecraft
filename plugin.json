@@ -1,0 +1,20 @@
+{
+    "id": "centralcorp",
+    "name": "CentralCorp Launcher Panel",
+    "description": "Panel plugin for CentralCorp Launcher",
+    "version": "1.0.5",
+    "url": "https:\/\/github.com\/CentralCorp",
+    "authors": [
+        "Riptiaz",
+        "CentralCorp"
+    ],
+    "azuriom_api": "1.1.0",
+    "providers": [
+        "\\Azuriom\\Plugin\\Centralcorp\\Providers\\CentralcorpServiceProvider",
+        "\\Azuriom\\Plugin\\Centralcorp\\Providers\\RouteServiceProvider"
+    ],
+    "dependencies": {
+        "filemanager?": "^1.0.2"
+    },
+    "apiId": 163
+}
