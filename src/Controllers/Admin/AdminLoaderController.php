@@ -3,51 +3,70 @@ namespace Azuriom\Plugin\Centralcorp\Controllers\Admin;
 
 use Azuriom\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Azuriom\Plugin\Centralcorp\Models\Option;
+use Azuriom\Models\Server;
 use Illuminate\Support\Facades\Http;
+use Azuriom\Plugin\Centralcorp\Models\OptionsLoader;
 
 class AdminLoaderController extends Controller
 {
-    public function index()
-    {
-        $options = Option::whereIn('name', [
-            'minecraft_version',
-            'loader_activation',
-            'loader_type',
-            'loader_forge_version',
-            'loader_build_version',
-            'loader_fabric_version',
-        ])->pluck('value', 'name');
+public function index()
+{
+    $servers = Server::all();
+    $options = OptionsLoader::all()->keyBy('server_id');
 
-        return view('centralcorp::admin.loader', compact('options'));
-    }
+    return view('centralcorp::admin.loader', compact('servers', 'options'));
+}
 
-    public function update(Request $request)
-    {
-        $request->validate([
-            'minecraft_version' => 'required|string',
-            'loader_activation' => 'required|boolean',
-            'loader_type' => 'required|string',
-            'loader_forge_version' => 'nullable|string',
-            'loader_build_version' => 'nullable|string',
-            'loader_fabric_version' => 'nullable|string',
-        ]);
+public function update(Request $request)
+{
+    $rules = [
+        'servers' => ['required', 'array'],
+    ];
 
-        $data = $request->only([
-            'minecraft_version',
-            'loader_activation',
-            'loader_type',
-            'loader_forge_version',
-            'loader_build_version',
-            'loader_fabric_version',
-        ]);
+    foreach ($request->input('servers', []) as $serverId => $data) {
+        $rules["servers.$serverId.minecraft_version"] = ['required', 'string', 'max:50'];
+        $rules["servers.$serverId.loader_activation"] = ['nullable', 'boolean'];
+        $rules["servers.$serverId.loader_type"] = ['required', 'in:forge,fabric,legacyfabric,neoForge,quilt'];
 
-        foreach ($data as $name => $value) {
-            Option::updateOrCreate(['name' => $name], ['value' => $value]);
+        if (isset($data['loader_type'])) {
+            if ($data['loader_type'] === 'forge') {
+                $rules["servers.$serverId.loader_forge_version"] = ['required', 'string', 'max:50'];
+            } else {
+                $rules["servers.$serverId.loader_forge_version"] = ['nullable'];
+            }
+
+            if ($data['loader_type'] === 'fabric') {
+                $rules["servers.$serverId.loader_fabric_version"] = ['required', 'string', 'max:50'];
+            } else {
+                $rules["servers.$serverId.loader_fabric_version"] = ['nullable'];
+            }
+
+            if (in_array($data['loader_type'], ['legacyfabric', 'neoForge', 'quilt'])) {
+                $rules["servers.$serverId.loader_build_version"] = ['required', 'string', 'max:50'];
+            } else {
+                $rules["servers.$serverId.loader_build_version"] = ['nullable'];
+            }
         }
-
-        return redirect()->back()->with('success', trans('centralcorp::messages.success_loader_update'));
     }
+
+    $validated = $request->validate($rules);
+
+    foreach ($validated['servers'] as $serverId => $data) {
+        OptionsLoader::updateOrCreate(
+            ['server_id' => $serverId],
+            [
+                'minecraft_version' => $data['minecraft_version'],
+                'loader_activation' => isset($data['loader_activation']) && $data['loader_activation'] ? 1 : 0,
+                'loader_type' => $data['loader_type'],
+                'loader_forge_version' => $data['loader_forge_version'] ?? null,
+                'loader_fabric_version' => $data['loader_fabric_version'] ?? null,
+                'loader_build_version' => $data['loader_build_version'] ?? null,
+            ]
+        );
+    }
+
+    return redirect()->back()->with('success', trans('centralcorp::messages.success_loader_update'));
+}
 
     public function getForgeBuilds(Request $request)
     {

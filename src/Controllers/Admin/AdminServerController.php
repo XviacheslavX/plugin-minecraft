@@ -10,49 +10,35 @@ class AdminServerController extends Controller
 {
     public function show()
     {
-        $serverOptions = OptionsServer::first();
         $servers = Server::all();
-        $currentServer = null;
-
-        if ($serverOptions) {
-            $currentServer = Server::where('name', $serverOptions->server_name)
-                ->where('address', $serverOptions->server_ip)
-                ->where('port', $serverOptions->server_port)
-                ->first();
-        }
-
-        return view('centralcorp::admin.server', compact('serverOptions', 'servers', 'currentServer'));
+        $serverOptions = OptionsServer::all()->keyBy('server_id');
+        return view('centralcorp::admin.server', compact('servers', 'serverOptions'));
     }
 
     public function update(Request $request)
     {
         $request->validate([
-            'server_id' => 'required|exists:servers,id',
-            'icon' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'servers.*.server_id' => 'required|exists:servers,id',
+            'servers.*.icon' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $serverOptions = OptionsServer::first();
+        foreach ($request->input('servers') as $index => $serverData) {
+            $serverId = $serverData['server_id'];
+            $options = OptionsServer::firstOrNew(['server_id' => $serverId]);
 
-        if (!$serverOptions) {
-            $serverOptions = new OptionsServer();
-        }
+            if ($request->hasFile("servers.$index.icon")) {
+                if ($options->icon) {
+                    \Storage::disk('public')->delete(str_replace('/storage/', '', $options->icon));
+                }
 
-        $selectedServer = Server::find($request->server_id);
-
-        if ($request->hasFile('icon')) {
-            if ($serverOptions->icon) {
-                \Storage::disk('public')->delete(str_replace('/storage/', '', $serverOptions->icon));
+                $path = $request->file("servers.$index.icon")->store('server_icon', 'public');
+                $options->icon = '/storage/' . $path;
             }
 
-            $path = $request->file('icon')->store('server_icon', 'public');
-            $serverOptions->icon = '/storage/' . $path;
-
-            $selectedServer->icon = $path;
-            $selectedServer->save();
+            $options->save();
         }
-        $serverOptions->save();
 
-        return redirect()->route('centralcorp.admin.server')->with('success', trans('centralcorp::messages.success_server_updated'));
+        return redirect()->route('centralcorp.admin.server')->with('success', 'Сервери оновлено');
     }
 }
 

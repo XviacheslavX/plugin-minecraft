@@ -2,19 +2,19 @@
 
 namespace Azuriom\Plugin\centralcorp\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Azuriom\Models\Server;
 
-class OptionsServer extends Model
+class OptionsLoader extends Model
 {
-    use HasFactory;
-
-    protected $table = 'centralcorp_server_options';
-
     protected $fillable = [
         'server_id',
-        'icon'
+        'minecraft_version',
+        'loader_activation',
+        'loader_type',
+        'loader_forge_version',
+        'loader_fabric_version',
+        'loader_build_version',
     ];
 
     public function server()
